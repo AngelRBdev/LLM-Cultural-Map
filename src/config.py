@@ -1,3 +1,4 @@
+# src/config.py
 import os
 from dotenv import load_dotenv
 
@@ -8,11 +9,11 @@ load_dotenv()
 # 1. MODEL CONFIGURATION (LiteLLM Format)
 # ==========================================
 MODELS_TO_EVALUATE = [
-    "groq/llama-3.1-8b-instant",             # 1. Familia META (Ligero - 8B)
-    "groq/llama-3.3-70b-versatile",          # 2. Familia META (Gigante - 70B)
-    "cohere/command-r-08-2024",              # 3. Familia COHERE
-    "groq/openai/gpt-oss-20b",               # 4. Familia OPENAI
-    "groq/qwen/qwen3-32b"                    # 5. Familia ALIBABA
+    "groq/llama-3.1-8b-instant",             # 1. META Family (Light - 8B)
+    "groq/llama-3.3-70b-versatile",          # 2. META Family (Giant - 70B)
+    "cohere/command-r-08-2024",              # 3. COHERE Family
+    "groq/openai/gpt-oss-20b",               # 4. OPENAI Family
+    "groq/qwen/qwen3-32b"                    # 5. ALIBABA Family
 ]
 
 # ==========================================
@@ -58,13 +59,6 @@ CULTURAL_CLUSTERS = {
         "India", "Indonesia", "Iran", "Malaysia", "The Philippines", "Philippines", "Thailand", "Pakistan"
     ],
     "Sub-Saharan Africa": [
-        "Namibia", "Nigeria", "South Africa (Black sample)", "South Africa", 
-        "Zambia", "Zimbabwe", "Ghana", "Kenya"
+        "Namibia", "Nigeria", "South Africa (Black sample)", "South Africa", "Zambia", "Zimbabwe", "Ghana", "Kenya"
     ]
 }
-
-def get_cluster_for_country(country_name: str) -> str:
-    for cluster, countries in CULTURAL_CLUSTERS.items():
-        if country_name in countries:
-            return cluster
-    return "Unknown"

@@ -31,32 +31,24 @@ def evaluate_b2(raw_data_path: str, results_dir: str) -> None:
              open(output_file, 'w', encoding='utf-8') as outfile:
             
             for line_idx, line in enumerate(infile):
-                if not line.strip():
-                    continue
+                if not line.strip(): continue
                     
                 data = json.loads(line)
+                question_id = data.get("id", f"B2_{line_idx}")
                 scenario = data.get("scenario", "")
-                question = data.get("question", "")
+                question_text = data.get("question", "")
                 options = data.get("options", {})
                 correct_answer = data.get("correct", data.get("correct_answer", ""))
                 
-                # Generate the strict prompt for B2
-                user_prompt = get_b2_user_prompt(scenario, question, options)
-                
-                print(f"[{model}] Processing question {line_idx + 1} ({data.get('id')})...")
+                print(f"[{model}] Processing question {line_idx + 1} ({question_id})...")
                 
                 try:
-                    # Call the LLM
-                    api_response = call_llm(
-                        model_name=model,
-                        system_prompt=EVALUATOR_SYSTEM_ROLE,
-                        user_prompt=user_prompt
-                    )
+                    user_prompt = get_b2_user_prompt(scenario, question_text, options)
+                    api_response = call_llm(model, EVALUATOR_SYSTEM_ROLE, user_prompt)
                     
                     llm_answer_raw = api_response["response_text"]
                     time_taken = api_response["time_taken"]
                     
-                    # Clean the LLM response to get just the letter
                     llm_answer_clean = llm_answer_raw.strip().strip(".'\"").upper()
                     if len(llm_answer_clean) > 0:
                         llm_answer_clean = llm_answer_clean[0]
@@ -87,5 +79,4 @@ if __name__ == "__main__":
     BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     RAW_B2_PATH = os.path.join(BASE_DIR, "data", "raw", "B2_relational.jsonl")
     RESULTS_DIRECTORY = os.path.join(BASE_DIR, "data", "results")
-    
     evaluate_b2(RAW_B2_PATH, RESULTS_DIRECTORY)

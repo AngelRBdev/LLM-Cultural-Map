@@ -12,13 +12,13 @@ def clean_model_name(model_name: str) -> str:
 
 def evaluate_b1(raw_data_path: str, results_dir: str) -> None:
     if not os.path.exists(raw_data_path):
-        print(f"❌ Error: No se encontró el archivo de datos en {raw_data_path}")
+        print(f"❌ Error: Data file not found at {raw_data_path}")
         return
 
     os.makedirs(results_dir, exist_ok=True)
 
     for model_name in MODELS_TO_EVALUATE:
-        print(f"\n========== Evaluando Modelo en B1: {model_name} ==========")
+        print(f"\n========== Evaluating Model on B1: {model_name} ==========")
         
         safe_model_name = clean_model_name(model_name)
         output_file = os.path.join(results_dir, f"B1_results_{safe_model_name}.jsonl")
@@ -27,38 +27,28 @@ def evaluate_b1(raw_data_path: str, results_dir: str) -> None:
              open(output_file, 'w', encoding='utf-8') as outfile:
             
             for line_idx, line in enumerate(infile):
-                if not line.strip():
-                    continue
+                if not line.strip(): continue
                     
                 data = json.loads(line)
-                question_id = data.get("question_id", f"B1_{line_idx}")
+                question_id = data.get("id", f"B1_{line_idx}")
                 question_text = data.get("question", "")
                 options = data.get("options", {})
                 correct_answer = data.get("correct", data.get("correct_answer", ""))
                 
-                print(f"[{model_name}] Procesando pregunta {line_idx + 1} ({question_id})...")
+                print(f"[{model_name}] Processing question {line_idx + 1} ({question_id})...")
                 
-                # Modificación Clave: Bloque try/except individual por pregunta para evitar congelamientos
                 try:
                     user_prompt = get_b1_user_prompt(question_text, options)
-                    
-                    # Llamada al cliente LLM
-                    api_response = call_llm(
-                        model_name=model_name,
-                        system_prompt=EVALUATOR_SYSTEM_ROLE,
-                        user_prompt=user_prompt
-                    )
+                    api_response = call_llm(model_name, EVALUATOR_SYSTEM_ROLE, user_prompt)
                     
                     llm_answer = api_response["response_text"]
                     time_taken = api_response["time_taken"]
                     
-                    # Verificamos si acertó (evaluación estricta de la primera letra)
                     is_correct = False
                     if llm_answer and llm_answer.strip():
                         first_char = llm_answer.strip()[0].upper()
                         is_correct = (first_char == correct_answer.upper())
                     
-                    # Estructuramos el resultado exitoso
                     result_record = {
                         **data,
                         "model": model_name,
@@ -67,26 +57,26 @@ def evaluate_b1(raw_data_path: str, results_dir: str) -> None:
                         "is_correct": is_correct
                     }
                     
-                    # Guardamos inmediatamente en el JSONL
+                    # Save immediately to the JSONL
                     json.dump(result_record, outfile, ensure_ascii=False)
                     outfile.write('\n')
                     
                 except Exception as e:
-                    # Si el modelo se queda sin tokens o da timeout, se activa este salvavidas:
-                    print(f"      ⚠️ saltando pregunta {question_id} debido a un error de API: {e}")
+                    # If the model runs out of tokens or times out, this failsafe triggers:
+                    print(f"      ⚠️ skipping question {question_id} due to API error: {e}")
                     
-                    # Guardamos un registro de error para que el archivo JSONL no quede corrupto
+                    # Save an error record so the JSONL file does not get corrupted
                     error_record = {
                         **data,
                         "model": model_name,
-                        "llm_response_raw": f"ERROR_API: {str(e)}",
+                        "llm_response_raw": f"API_ERROR: {str(e)}",
                         "time_taken": 0.0,
                         "is_correct": False
                     }
                     json.dump(error_record, outfile, ensure_ascii=False)
                     outfile.write('\n')
                     
-                    # IMPORTANTE: continua con la siguiente pregunta en vez de romper el bucle
+                    # IMPORTANT: continue with the next question instead of breaking the loop
                     continue
                     
-    print("\n========== Fase B1 Completada ==========")
+    print("\n========== Phase B1 Completed ==========")

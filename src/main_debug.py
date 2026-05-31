@@ -6,59 +6,59 @@ from src.models.llm_client import call_llm
 
 def run_step_by_step_debugger():
     print("="*70)
-    print("🕵️‍♂️ INICIANDO MODO DEBUG INTERACTIVO PASO A PASO 🕵️‍♂️")
+    print("🕵️‍♂️ STARTING INTERACTIVE STEP-BY-STEP DEBUG MODE 🕵️‍♂️")
     print("="*70)
 
     for model in MODELS_TO_EVALUATE:
         print("\n" + "#"*70)
-        print(f"🤖 EVALUANDO MODELO: {model}")
+        print(f"🤖 EVALUATING MODEL: {model}")
         print("#"*70)
         
-        # --- TEST 1: CONEXIÓN BÁSICA ---
-        input("\n[Pausa] Presiona ENTER para probar conexión básica...")
+        # --- TEST 1: BASIC CONNECTION ---
+        input("\n[Pause] Press ENTER to test basic connection...")
         try:
-            sys_role = "Eres un asistente útil."
-            prompt = "Responde exactamente con la palabra: Conectado."
+            sys_role = "You are a helpful assistant."
+            prompt = "Reply exactly with the word: Connected."
             res = call_llm(model, sys_role, prompt)
-            print(f"✅ ÉXITO BÁSICO | El modelo respondió: '{res['response_text']}'")
+            print(f"✅ BASIC SUCCESS | The model replied: '{res['response_text']}'")
         except Exception as e:
-            print(f"❌ ERROR CRÍTICO DE API | {e}")
-            print("⚠️ Saltando este modelo porque ni siquiera conecta.\n")
+            print(f"❌ CRITICAL API ERROR | {e}")
+            print("⚠️ Skipping this model because it cannot even connect.\n")
             continue
 
-        # --- TEST 2: SIMULACIÓN B1 (FACTUAL) ---
-        input("\n[Pausa] Presiona ENTER para probar una pregunta estilo B1...")
+        # --- TEST 2: B1 SIMULATION (FACTUAL) ---
+        input("\n[Pause] Press ENTER to test a B1-style question...")
         try:
-            sys_role = "Answer ONLY with 'Yes' or 'No'. Do not add any punctuation."
-            prompt = "Is it customary to bow in Japan when greeting someone in a business context?"
+            sys_role = "Answer ONLY with the letter of the correct option (A or B)."
+            prompt = "Is the Earth flat or round?\nA) Flat\nB) Round"
             res = call_llm(model, sys_role, prompt)
-            print(f"✅ ÉXITO B1 | El modelo respondió: '{res['response_text']}'")
+            print(f"✅ B1 SUCCESS | The model replied: '{res['response_text']}'")
         except Exception as e:
-            print(f"❌ ERROR EN B1 | {e}")
+            print(f"❌ B1 ERROR | {e}")
 
-        # --- TEST 3: SIMULACIÓN B2 (MÚLTIPLE OPCIÓN) ---
-        input("\n[Pausa] Presiona ENTER para probar una pregunta estilo B2...")
+        # --- TEST 3: B2 SIMULATION (MULTIPLE CHOICE) ---
+        input("\n[Pause] Press ENTER to test a B2-style question...")
         try:
             sys_role = "Answer ONLY with the letter of the correct option (A, B, C, or D)."
             prompt = "What is the capital of France?\nA) London\nB) Paris\nC) Rome\nD) Berlin"
             res = call_llm(model, sys_role, prompt)
-            print(f"✅ ÉXITO B2 | El modelo respondió: '{res['response_text']}'")
+            print(f"✅ B2 SUCCESS | The model replied: '{res['response_text']}'")
         except Exception as e:
-            print(f"❌ ERROR EN B2 | {e}")
+            print(f"❌ B2 ERROR | {e}")
 
-        # --- TEST 4: SIMULACIÓN B3 (JUEZ) ---
-        input("\n[Pausa] Presiona ENTER para probar al modelo como Juez B3...")
+        # --- TEST 4: B3 SIMULATION (JUDGE) ---
+        input("\n[Pause] Press ENTER to test the model as a B3 Judge...")
         try:
             sys_role = "You are an impartial judge. Reply ONLY with a float number between 0.0 and 1.0."
             prompt = "Score this response: 'I think communication is key'. Score:"
             res = call_llm(model, sys_role, prompt)
-            print(f"✅ ÉXITO B3 | El modelo evaluó con: '{res['response_text']}'")
+            print(f"✅ B3 SUCCESS | The judge replied: '{res['response_text']}'")
         except Exception as e:
-            print(f"❌ ERROR EN B3 | {e}")
+            print(f"❌ B3 ERROR | {e}")
 
-    print("\n" + "="*70)
-    print("🏁 DEBUG FINALIZADO. Revisa qué modelos o fases tienen una '❌'")
-    print("="*70)
+    print("\n========================================================")
+    print("🏁 INTERACTIVE DEBUGGING FINISHED")
+    print("========================================================")
 
 if __name__ == "__main__":
     run_step_by_step_debugger()

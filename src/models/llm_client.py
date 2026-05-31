@@ -30,13 +30,13 @@ def call_llm(model_name: str, system_prompt: str, user_prompt: str) -> dict:
         
         end_time = time.time()
         
-        # Freno automático de 2.5 segundos para no saturar las APIs gratuitas
+        # Automatic 2.5-second delay to prevent saturating free APIs
         time.sleep(2.5)
         
-        # 1. Extraemos el texto crudo
+        # 1. Extract the raw text
         raw_text = response.choices[0].message.content.strip()
         
-        # 2. Filtro inteligente: Si el modelo "piensa" (ej. Qwen3), borramos el pensamiento
+        # 2. Smart filter: If the model "thinks" (e.g., Qwen3), remove the thought process
         if "</think>" in raw_text:
             raw_text = raw_text.split("</think>")[-1].strip()
             
@@ -46,5 +46,5 @@ def call_llm(model_name: str, system_prompt: str, user_prompt: str) -> dict:
         }
         
     except Exception as e:
-        print(f"\n      [!] API Error interceptado (esperando para reintentar): {e}")
+        print(f"\n      [!] API Error intercepted (waiting to retry): {e}")
         raise e

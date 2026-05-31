@@ -3,7 +3,7 @@
 import os
 import json
 import re
-from time import sleep  # <-- Importación correcta
+from time import sleep  # <-- Correct import
 from src.config import MODELS_TO_EVALUATE, B3_EVALUATION_THRESHOLD
 from src.prompts.system_roles import EVALUATOR_SYSTEM_ROLE
 from src.prompts.b3_prompts import get_b3_answering_prompt, get_b3_judge_prompt
@@ -59,7 +59,6 @@ def evaluate_b3(raw_data_path: str, results_dir: str) -> None:
                     target_answer = target_response["response_text"]
                     target_time = target_response["time_taken"]
                     
-                    # Pausa de seguridad antes de los jueces
                     sleep(2)
                     
                     # 2. Judges evaluate
@@ -73,11 +72,9 @@ def evaluate_b3(raw_data_path: str, results_dir: str) -> None:
                             clean_score = extract_score(judge_response["response_text"])
                             judge_scores[judge] = clean_score
                             
-                            # PAUSA ARREGLADA (y aumentada a 4s para evitar el Rate Limit de Groq)
                             sleep(4) 
                             
                         except Exception as judge_e:
-                            # Ahora imprimimos el error real para saber qué pasa
                             print(f"      [!] Judge {judge} failed to score. Error: {str(judge_e)}")
                     
                     # If ALL judges failed, we can't score this question
