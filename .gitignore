@@ -1,0 +1,16 @@
+# Entornos virtuales
+.venv/
+venv/
+env/
+
+# Claves y secretos (¡CRÍTICO!)
+.env
+
+# Archivos temporales de Python
+__pycache__/
+*.pyc
+
+# Opcional: Si no quieres subir los datos crudos o generados por su peso, 
+# descomenta (quita el #) de las siguientes líneas:
+# data/raw/
+# data/results/
