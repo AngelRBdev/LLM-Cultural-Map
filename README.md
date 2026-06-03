@@ -7,7 +7,7 @@ The evaluation is grounded in **Erin Meyer's 8 Cultural Dimensions** (Communicat
 
 ## 🏗️ Project Architecture
 
-\`\`\`text
+```text
 cultural_bias_benchmark/
 │
 ├── data/
@@ -25,7 +25,7 @@ cultural_bias_benchmark/
 │
 ├── .env                     # Environment variables (API Keys)
 └── requirements.txt         # Python dependencies
-\`\`\`
+```
 
 ## 🧠 Evaluation Phases
 
@@ -40,18 +40,18 @@ The benchmark tests models across three escalating levels of complexity:
 **1. Clone the repository and navigate to the root folder.**
 
 **2. Install dependencies:**
-\`\`\`bash
+```bash
 pip install -r requirements.txt
-\`\`\`
+```
 
 **3. Configure Environment Variables:**
 Create a `.env` file in the root directory and add your API keys for the providers you intend to use via LiteLLM:
-\`\`\`text
+```text
 OPENAI_API_KEY="your_key_here"
 GEMINI_API_KEY="your_key_here"
 MISTRAL_API_KEY="your_key_here"
 HUGGINGFACE_API_KEY="your_key_here"
-\`\`\`
+```
 
 *Note: Ensure your `.env` file is added to `.gitignore` to prevent leaking API keys.*
 
@@ -59,16 +59,16 @@ HUGGINGFACE_API_KEY="your_key_here"
 
 **Step 1: Prepare the Data**
 Before running the benchmark, you must clean the raw data to hide the solutions from the models.
-\`\`\`bash
+```bash
 python src/utils/data_handler.py
-\`\`\`
+```
 *This will read files from `data/raw/` and generate `_processed` versions in `data/processed/`.*
 
 **Step 2: Run the Benchmark**
 Execute the main orchestrator to start the evaluation across all models and phases.
-\`\`\`bash
+```bash
 python -m src.main
-\`\`\`
+```
 
 ## 📊 Reporting
 Once the benchmark completes, a comprehensive Markdown report (`benchmark_final_report.md`) is automatically generated in the `data/results/` directory. 
