@@ -7,7 +7,7 @@ The evaluation is grounded in **Erin Meyer's 8 Cultural Dimensions** (Communicat
 
 ## 🏗️ Project Architecture
 
-``` text
+```text
 cultural_bias_benchmark/
 │
 ├── data/
