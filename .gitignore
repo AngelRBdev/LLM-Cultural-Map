@@ -14,3 +14,6 @@ __pycache__/
 # descomenta (quita el #) de las siguientes líneas:
 # data/raw/
 # data/results/
+
+# Checkpoints de las pasadas LLM (temporales, no reproducibles)
+*.checkpoint.jsonl
