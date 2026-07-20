@@ -13,7 +13,6 @@ MODELS_TO_EVALUATE = [
     "groq/llama-3.3-70b-versatile",          # 2. META Family (Giant - 70B)
     "cohere/command-r-08-2024",              # 3. COHERE Family
     "groq/openai/gpt-oss-20b",               # 4. OPENAI Family
-    "groq/qwen/qwen3-32b"                    # 5. ALIBABA Family
 ]
 
 # ==========================================
