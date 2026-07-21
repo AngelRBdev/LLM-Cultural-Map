@@ -34,7 +34,7 @@ Schema fields:
   is_counter_stereotype, uses_expansion, separation, weight
 """
 
-import json, random, itertools
+import json, random, itertools, os
 from collections import defaultdict
 
 random.seed(42)
@@ -409,7 +409,7 @@ T = {
  },
 }
 
-# ── Pair-validity logic (identical to B1) ────────────────────────────────────
+# ── Pair-validity logic (identical to B1) ────────────────────────────────    
 def valid_pairs(dim):
     pos = SCALES[dim]
     out = []
@@ -417,7 +417,6 @@ def valid_pairs(dim):
         sep = abs(pos[a] - pos[b])
         if sep < MIN_SEP:
             continue
-        # a = LOW pole, b = HIGH pole  (enforce by convention; swap later if needed)
         low_c, high_c = (a, b) if pos[a] < pos[b] else (b, a)
         opposite_poles = (pos[low_c] - MID) * (pos[high_c] - MID) < 0
         same_macro     = macro(low_c) == macro(high_c)
@@ -438,8 +437,6 @@ def valid_pairs(dim):
 _ANSWER_SLOTS = ["A", "B", "C", "D"]
 
 def shuffle_options(correct_text, distractor_texts):
-    """Return (options_dict, correct_key) with the correct answer placed
-    randomly so the position distribution converges to 25% each."""
     slot = random.choice(_ANSWER_SLOTS)
     others = [s for s in _ANSWER_SLOTS if s != slot]
     random.shuffle(others)
@@ -462,7 +459,6 @@ def build_item(dim, tpl_idx, pair, item_id, group_id):
     template = tpl_data["tpl"][tpl_idx]
     question = tpl_data["question"][tpl_idx]
 
-    # fill optional inline variables (msg_low, indirect, critique, …)
     fill = {}
     for key in ("msg_low", "indirect", "critique"):
         if key in tpl_data:
@@ -472,7 +468,7 @@ def build_item(dim, tpl_idx, pair, item_id, group_id):
     question = question.format(LOW=low_c, HIGH=high_c)
 
     correct_text   = tpl_data["correct_answer"][tpl_idx]
-    distractor_set = list(tpl_data["distractors"][tpl_idx])  # copy
+    distractor_set = list(tpl_data["distractors"][tpl_idx])
 
     options, correct_key = shuffle_options(correct_text, distractor_set)
 
@@ -490,7 +486,7 @@ def build_item(dim, tpl_idx, pair, item_id, group_id):
         "country_high":      high_c,
         "cluster_low":       CLUSTER[low_c],
         "cluster_high":      CLUSTER[high_c],
-        "gold_pole":         "low_explicit",   # scenario always shows LOW acting first
+        "gold_pole":         "low_explicit",
         "is_counter_stereotype": pair["counter"],
         "uses_expansion":    pair.get("expansion", False),
         "separation":        pair["sep"],
@@ -563,7 +559,6 @@ def generate(n_templates):
                 "cap": min(kk, avail_counter),
             })
 
-    # distribute counter-stereotype quota (largest-remainder)
     quota = round(TOTAL * COUNTER_TARGET)
     raw   = [s["kk"] * COUNTER_TARGET for s in splits]
     base  = [min(int(r), splits[i]["cap"]) for i, r in enumerate(raw)]
@@ -596,7 +591,7 @@ def generate(n_templates):
             items.append(it)
     return items
 
-# ── Report ────────────────────────────────────────────────────────────────────
+# ── Report ────────────────────────────────────────────────────────────────----
 def report(items, name):
     n   = len(items)
     ctr = sum(1 for i in items if i["is_counter_stereotype"])
@@ -620,12 +615,20 @@ def report(items, name):
     print("Per dimension:", dict(per_dim))
 
 # ── Run ───────────────────────────────────────────────────────────────────────
-for variant, ntpl in [("A_1template", 1), ("B_2templates", 2)]:
-    random.seed(42)
-    items = generate(ntpl)
-    report(items, variant)
-    path = f"/home/claude/V2_B2_applied_{variant}.jsonl"
-    with open(path, "w") as f:
-        for it in items:
-            f.write(json.dumps(it, ensure_ascii=False) + "\n")
-    print("written:", path)
+if __name__ == "__main__":
+    raw_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "raw"))
+    os.makedirs(raw_dir, exist_ok=True)
+    
+    path = os.path.join(raw_dir, "b2_dataset.jsonl")
+    if os.path.exists(path):
+        os.remove(path)
+
+    for variant, ntpl in [("A_1template", 1), ("B_2templates", 2)]:
+        random.seed(42)
+        items = generate(ntpl)
+        report(items, variant)
+        
+        with open(path, "a", encoding="utf-8") as f:
+            for it in items:
+                f.write(json.dumps(it, ensure_ascii=False) + "\n")
+        print("Successfully written variant to:", path)

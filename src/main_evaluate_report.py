@@ -19,7 +19,7 @@ def evaluate_response(data):
             return matches[0] == gold
         return False
         
-    # Variant C (Multiple Choice A, B, C, D)
+    # Variant C / Multiple Choice (A, B, C, D) - Covers B2 and B3
     elif "correct" in data:
         gold = str(data["correct"]).lower()
         match = re.search(r'\b(?:option|answer\s*is)?\s*([a-d])\b', raw_response)
@@ -34,7 +34,7 @@ def generate_json_report(results_dir="data/results"):
     print("📊 STARTING BIAS ANALYSIS AND REPORT GENERATION")
     print("==================================================")
     
-    # Files to process matching the new naming convention
+    # Files to process matching the naming convention
     result_files = glob.glob(os.path.join(results_dir, "*_answers_*.jsonl"))
     if not result_files:
         print(f"[-] No result files (*_answers_*.jsonl) found in '{results_dir}' to process.")
@@ -75,9 +75,12 @@ def generate_json_report(results_dir="data/results"):
                 dim = data.get("dimension", "Unknown")
                 is_correct = evaluate_response(data)
                 
+                # Extract clusters mapping safely across B1, B2, and B3 structures
                 clusters_involved = []
                 if "cluster_a" in data and "cluster_b" in data:
                     clusters_involved.extend([data["cluster_a"], data["cluster_b"]])
+                elif "cluster_low" in data and "cluster_high" in data:
+                    clusters_involved.extend([data["cluster_low"], data["cluster_high"]])
                 elif "cluster_correct" in data:
                     clusters_involved.append(data["cluster_correct"])
                 
