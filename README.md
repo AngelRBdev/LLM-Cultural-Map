@@ -1,80 +1,94 @@
-# 🌍 Cultural Bias Benchmark for LLMs
+# 🌍 Cultural Bias Benchmark System for LLMs
 
-## Overview
-The **Cultural Bias Benchmark** is an automated evaluation framework designed to measure and analyze how different Large Language Models (LLMs) handle cross-cultural business communication, organizational behavior, and cultural biases. 
+## 1. System Overview & Theoretical Foundation
+The **Cultural Bias Benchmark System** is an automated, enterprise-grade evaluation framework engineered to measure, analyze, and quantify how different Large Language Models (LLMs) handle cross-cultural business communication, organizational behavior, and systemic cultural biases. 
 
-The evaluation is grounded in **Erin Meyer's 8 Cultural Dimensions** (Communicating, Evaluating, Persuading, Leading, Deciding, Trusting, Disagreeing, and Scheduling) and groups responses across **10 Global Cultural Clusters**.
+The system’s core architecture is deeply grounded in two foundational frameworks of intercultural management:
+* **Erin Meyer’s 8 Cultural Dimensions:** Evaluates communication styles and workplace dynamics across *Communicating, Evaluating, Persuading, Leading, Deciding, Trusting, Disagreeing, and Scheduling*.
+* **GLOBE Study Cultural Clusters:** Groups and maps behavioral responses across **10 Global Cultural Clusters** (such as *Anglo, Germanic Europe, Nordic Europe, Latin Europe, Eastern Europe, Latin America, Middle East, Southern Asia, Sub-Saharan Africa, and Confucian Asia*).
 
-## 🏗️ Project Architecture
+---
+
+## 2. Core Evaluation Phases & Architecture
+To rigorously test model performance across various cognitive and behavioral levels, the system implements an escalating three-phase evaluation pipeline:
+
+* **Phase B1 (Factual Knowledge):** Utilizes binary (`Yes/No`) comparative queries to test a model's foundational comprehension of cultural behavioral polarities and patterns between specific country pairs.
+* **Phase B2 (Applied / Relational Reasoning):** Employs multiple-choice workplace scenario items depicting cross-cultural miscommunications or friction, challenging the model to correctly identify root cultural causes versus non-cultural administrative, technical, or interpersonal distractors[cite: 13].
+* **Phase B3 (Behavioral Identification):** Presents granular workplace behavioral scenarios where models must deduce the most likely country of origin using multi-choice regional and cultural distractors distributed across varying degrees of pole separation[cite: 13].
+
+---
+
+## 3. System Directory Structure & Components
+The repository is structured into distinct, modular functional directories[cite: 13]:
 
 ```text
 cultural_bias_benchmark/
 │
 ├── data/
-│   ├── raw/                 # Original JSONL datasets (with solutions)
-│   ├── processed/           # Cleaned datasets for evaluation (without solutions)
-│   └── results/             # Generated LLM responses and final Markdown reports
+│   ├── generators/          # Programmatic dataset generators (generate_b1.py, generate_b2.py, generate_b3.py)
+│   ├── raw/                 # Source JSONL benchmark datasets (b1_dataset.jsonl, b2_dataset.jsonl, b3_dataset.jsonl)
+│   └── results/             # Generated raw LLM response logs (e.g., b1_answers_[model].jsonl)
+│
+├── external_evaluations/    # Complementary external mapping studies and datasets (CCD, Eticor)
+├── reports/                 # Compiled analytical Markdown evaluation reports (cultural_bias_report.md)
 │
 ├── src/
-│   ├── config.py            # Global configuration (Models, Thresholds, Clusters)
-│   ├── main.py              # Main orchestrator script
-│   ├── prompts/             # Strict system and user prompts for each phase
-│   ├── models/              # API clients and retry logic (LiteLLM + Tenacity)
-│   ├── evaluators/          # Evaluation logic for B1, B2, and B3 phases
-│   └── utils/               # Data processing and report generation tools
+│   ├── config.py            # Global configuration (LiteLLM models, thresholds, cultural clusters mapping)
+│   ├── main_run_benchmark.py# Primary orchestrator script for querying model APIs
+│   ├── main_evaluate_report.py # Evaluation engine that parses responses and compiles metrics
+│   └── models/              # API clients and fault-tolerant retry logic (LiteLLM + Tenacity)
 │
-├── .env                     # Environment variables (API Keys)
-└── requirements.txt         # Python dependencies
-```
+├── .env                     # Environment variables (Private API Keys)
+├── requirements.txt         # Python project dependencies
+└── README.md                # System documentation
+```[cite: 13]
 
-## 🧠 Evaluation Phases
+---
 
-The benchmark tests models across three escalating levels of complexity:
+## 4. Execution Pipeline & Workflow
+The benchmark system operates through two primary entry points that separate model inference from analytical reporting:
 
-1. **Phase B1 (Factual):** Binary (Yes/No) questions testing factual knowledge of cultural norms. Evaluated by strict character matching.
-2. **Phase B2 (Relational):** Multiple-choice scenarios involving interactions between two different cultural regions. Evaluated by strict character matching.
-3. **Phase B3 (Reasoning):** Complex, open-ended scenarios. This phase utilizes an **LLM-as-a-Judge** methodology. The target model generates a short essay, which is then scored (0.0 to 1.0) by the other 4 models in the benchmark against a gold-standard rubric. An average score of `>= 0.75` is considered a pass.
+1. **Inference Execution (`src/main_run_benchmark.py`):**
+   * Iterates through the models defined in `src/config.py`[cite: 13].
+   * Automatically detects question formats (binary vs. multi-option dictionaries)[cite: 13].
+   * Interacts with language models via LiteLLM, writing raw logs sequentially into `data/results/` using a standardized naming convention (`b1_answers_[model].jsonl`, `b2_answers_[model].jsonl`, `b3_answers_[model].jsonl`)[cite: 13].
 
-## 🚀 Setup and Installation
+2. **Evaluation & Reporting Engine (`src/main_evaluate_report.py`):**
+   * Parses raw response files from `data/results/` without requiring live model API calls[cite: 13].
+   * Applies regular expression matching to extract correct answers, calculating granular accuracies per cultural cluster and Meyer dimension[cite: 13].
+   * Generates a comprehensive summary document and saves it directly to **`reports/cultural_bias_report.md`**[cite: 13].
 
-**1. Clone the repository and navigate to the root folder.**
+---
 
-**2. Install dependencies:**
+## 5. Configuration & Supported Models
+Model behaviors, evaluation thresholds, and cultural cluster definitions are centrally managed in `src/config.py`[cite: 13]. By default, the system evaluates models via LiteLLM[cite: 13], supporting providers such as:
+* `groq/llama-3.1-8b-instant`[cite: 13]
+* `groq/llama-3.3-70b-versatile`[cite: 13]
+* `cohere/command-r-08-2024`[cite: 13]
+* `groq/openai/gpt-oss-20b`[cite: 13]
+
+---
+
+## 6. Quick Start & Setup Guide
+
+### Step 1: Installation
+Clone the repository and install the required Python dependencies listed in `requirements.txt`[cite: 13]:
 ```bash
 pip install -r requirements.txt
-```
+```[cite: 13]
 
-**3. Configure Environment Variables:**
-Create a `.env` file in the root directory and add your API keys for the providers you intend to use via LiteLLM:
+### Step 2: Environment Configuration
+Create a `.env` file in the root directory to store your private API keys required by LiteLLM[cite: 13]:
 ```text
 OPENAI_API_KEY="your_key_here"
 GEMINI_API_KEY="your_key_here"
-MISTRAL_API_KEY="your_key_here"
-HUGGINGFACE_API_KEY="your_key_here"
-```
+GROQ_API_KEY="your_key_here"
+COHERE_API_KEY="your_key_here"
+```[cite: 13]
 
-*Note: Ensure your `.env` file is added to `.gitignore` to prevent leaking API keys.*
+> *Security Note: Ensure your `.env` file is included inside your `.gitignore` file to prevent accidental credential leakage[cite: 13].*
 
-## ⚙️ Usage
-
-**Step 1: Prepare the Data**
-Before running the benchmark, you must clean the raw data to hide the solutions from the models.
+### Step 3: Running the Benchmark System
+To execute model evaluations across all datasets and automatically trigger the report generation module, run[cite: 13]:
 ```bash
-python src/utils/data_handler.py
-```
-*This will read files from `data/raw/` and generate `_processed` versions in `data/processed/`.*
-
-**Step 2: Run the Benchmark**
-Execute the main orchestrator to start the evaluation across all models and phases.
-```bash
-python -m src.main
-```
-
-## 📊 Reporting
-Once the benchmark completes, a comprehensive Markdown report (`benchmark_final_report.md`) is automatically generated in the `data/results/` directory. 
-
-The report breaks down the performance of each model by:
-- Overall Accuracy
-- Average Time taken per query
-- Accuracy across the 8 Meyer's Cultural Dimensions
-- Accuracy across the 10 Global Cultural Clusters
+python src/main_run_benchmark.py

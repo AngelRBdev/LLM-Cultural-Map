@@ -1,40 +1,20 @@
 #!/usr/bin/env python3
 """
-B2 (Applied) generator — LLM Cultural Map benchmark.
+B1 (Factual Yes/No) generator — LLM Cultural Map benchmark.
 
 Design (parallel to B1 V2 rebuild):
-- Each item describes a cross-cultural workplace misunderstanding involving
-  TWO named countries and asks a 4-option MCQ. The correct answer is always
-  the culturally-grounded interpretation; distractors are plausible
-  non-cultural explanations (administrative, interpersonal, technical).
+- Each item describes a concrete behavioural situation and asks whether a
+  professional from country A is more likely to exhibit that behaviour than one from country B,
+  given one specific Meyer dimension.
 - SAME SCENARIO TEMPLATE across MULTIPLE COUNTRY PAIRS (the pair_group
-  mechanic from B1): the situation is word-for-word identical; only the
-  country names change. Consistency within a pair_group is the headline
-  metric — a model that truly grasps the dimension answers correctly across
-  famous AND obscure pairs.
+  mechanic): the situation is word-for-word identical; only the
+  country names change.
 - ~35% COUNTER-STEREOTYPE items: the two countries come from the SAME
-  macro-region but sit on OPPOSITE sides of the dimension. The naive
-  "same-region → same-behaviour" shortcut fails on these.
-- ANSWER ROTATION: the correct answer is randomly assigned to A/B/C/D
-  across items (target ≈ 25% each); distractors are shuffled accordingly.
-  This prevents a fixed-position bias.
-- Expansion countries (UAE, Qatar, Kuwait, Egypt, Zimbabwe, Tanzania) used
-  only in clear cross-region, stereotype-CONSISTENT pairs. They NEVER
-  appear in counter-stereotype items.
-- Two variants:
-    VARIANT A — 1 template per dimension, 12 pairs each, 8 pair_groups.
-    VARIANT B — 2 templates per dimension, ~6 pairs each, 16 pair_groups.
-
-Schema fields:
-  id, block, dimension, template_id, pair_group,
-  scenario, question, options (dict A-D), correct,
-  country_low, country_high,   ← which country exhibits the LOW-pole /
-  cluster_low, cluster_high,      HIGH-pole behaviour in the scenario
-  gold_pole,                   ← which pole (low/high) the scenario depicts
-  is_counter_stereotype, uses_expansion, separation, weight
+  macro-region but sit on OPPOSITE sides of the dimension.
+- ANSWER BALANCING: distributed evenly to prevent position/pole bias.
 """
 
-import json, random, itertools
+import json, random, itertools, os
 from collections import defaultdict, OrderedDict
 
 random.seed(42)
@@ -204,16 +184,6 @@ SCALES = {
 }
 
 # ── Scenario templates ────────────────────────────────────────────────────────
-# Each template defines:
-#   situation_low  : one side exhibits LOW-pole behaviour
-#   situation_high : one side exhibits HIGH-pole behaviour
-#   tpl            : list of 2 template strings, {LOW} = low-pole country,
-#                    {HIGH} = high-pole country
-#   question       : list of 2 question strings (parallel to tpl)
-#   correct_answer : the culturally-grounded explanation (always becomes the
-#                    correct option after shuffling)
-#   distractors    : 3 plausible non-cultural explanations
-# ─────────────────────────────────────────────────────────────────────────────
 TB1 = {
  "Communicating": {
   "low": [
@@ -297,7 +267,7 @@ TB1 = {
  }
 }
 
-# ── Pair-validity logic (identical to B1) ────────────────────────────────────
+# ── Pair-validity logic ──────────────────────────────────────────────────────
 def valid_pairs(dim):
     pos = SCALES[dim]
     out = []
@@ -305,7 +275,6 @@ def valid_pairs(dim):
         sep = abs(pos[a] - pos[b])
         if sep < MIN_SEP:
             continue
-        # a = LOW pole, b = HIGH pole  (enforce by convention; swap later if needed)
         low_c, high_c = (a, b) if pos[a] < pos[b] else (b, a)
         opposite_poles = (pos[low_c] - MID) * (pos[high_c] - MID) < 0
         same_macro     = macro(low_c) == macro(high_c)
@@ -324,8 +293,7 @@ def valid_pairs(dim):
 
 def select_pairs(pool, k, cluster_load, country_load, n_counter_target, used):
     chosen = []
-    n_counter_target = min(n_counter_target,
-                           sum(1 for p in pool if p["counter"]))
+    n_counter_target = min(n_counter_target, sum(1 for p in pool if p["counter"]))
     def score(p):
         return (cluster_load[CLUSTER[p["low"]]] + cluster_load[CLUSTER[p["high"]]]
                 + 0.5 * (country_load[p["low"]] + country_load[p["high"]])
@@ -333,10 +301,9 @@ def select_pairs(pool, k, cluster_load, country_load, n_counter_target, used):
     counters_taken = 0
     remaining = list(pool)
     while len(chosen) < k and remaining:
-        slots_left          = k - len(chosen)
+        slots_left = k - len(chosen)
         counters_left_needed = n_counter_target - counters_taken
-        cands = [p for p in remaining
-                 if frozenset((p["low"], p["high"])) not in used]
+        cands = [p for p in remaining if frozenset((p["low"], p["high"])) not in used]
         if not cands:
             break
         if counters_taken < n_counter_target:
@@ -362,38 +329,30 @@ def per_dim_counts(total, ndim=8):
     rem  = total - base * ndim
     return [base + 1 if i < rem else base for i in range(ndim)]
 
-
-# ── Build one item (B1: Yes/No comparative, gold from scales) ─────────────────
-# combo = (pole_asked, a_is_low). gold = Yes iff (pole low & A is low-pole country)
-#                                          or   (pole high & A is high-pole country)
 def build_item(dim, tpl_idx, pair, pole, a_is_low, item_id, group_id):
     low_c, high_c = pair["low"], pair["high"]
     A, B = (low_c, high_c) if a_is_low else (high_c, low_c)
     template = TB1[dim][pole][tpl_idx]
     scenario = template.replace("{A}", A).replace("{B}", B)
-    gold = "Yes" if ((pole == "low" and a_is_low) or
-                     (pole == "high" and not a_is_low)) else "No"
+    gold = "Yes" if ((pole == "low" and a_is_low) or (pole == "high" and not a_is_low)) else "No"
     return {
-        "id":                item_id,
-        "block":             "B1",
-        "dimension":         dim,
-        "template_id":       f"{dim[:4].upper()}-T{tpl_idx + 1}",
-        "pair_group":        group_id,
-        "scenario":          scenario,
-        "country_a":         A,
-        "country_b":         B,
-        "cluster_a":         CLUSTER[A],
-        "cluster_b":         CLUSTER[B],
-        "gold_answer":       gold,
+        "id": item_id,
+        "block": "B1",
+        "dimension": dim,
+        "template_id": f"{dim[:4].upper()}-T{tpl_idx + 1}",
+        "pair_group": group_id,
+        "scenario": scenario,
+        "country_a": A,
+        "country_b": B,
+        "cluster_a": CLUSTER[A],
+        "cluster_b": CLUSTER[B],
+        "gold_answer": gold,
         "is_counter_stereotype": pair["counter"],
-        "uses_expansion":    pair.get("expansion", False),
-        "separation":        pair["sep"],
-        "pole_asked":        pole,
+        "uses_expansion": pair.get("expansion", False),
+        "separation": pair["sep"],
+        "pole_asked": pole,
     }
 
-# 4 balanced answer combos: 2 give Yes, 2 give No; 2 ask low pole, 2 ask high.
-# Distributing them evenly per dimension makes gold 50/50 *within each pole*,
-# so guessing from pole_asked alone gives ~50% (removes the pole->answer leak).
 _COMBOS = [("low", True), ("low", False), ("high", True), ("high", False)]
 def balanced_combos(n):
     base, rem = divmod(n, 4)
@@ -402,82 +361,78 @@ def balanced_combos(n):
         out += [c] * (base + (1 if i < rem else 0))
     return out
 
-# ── Main generator ────────────────────────────────────────────────────────────
 def generate(n_templates):
-    dims          = list(SCALES.keys())
-    counts        = per_dim_counts(TOTAL, len(dims))
-    cluster_load  = defaultdict(int)
-    country_load  = defaultdict(int)
-    items         = []
+    dims = list(SCALES.keys())
+    counts = per_dim_counts(TOTAL, len(dims))
+    cluster_load = defaultdict(int)
+    country_load = defaultdict(int)
+    items = []
 
     splits = []
     for di, dim in enumerate(dims):
-        pool          = valid_pairs(dim)
+        pool = valid_pairs(dim)
         avail_counter = sum(1 for p in pool if p["counter"])
-        k             = counts[di]
+        k = counts[di]
         if n_templates == 1:
             parts = [(0, k)]
         else:
-            k1 = (k + 1) // 2; k2 = k - k1
+            k1 = (k + 1) // 2
+            k2 = k - k1
             parts = [(0, k1), (1, k2)]
         for tpl_idx, kk in parts:
-            splits.append({"dim": dim, "tpl": tpl_idx, "kk": kk,
-                           "pool": pool, "cap": min(kk, avail_counter)})
+            splits.append({"dim": dim, "tpl": tpl_idx, "kk": kk, "pool": pool, "cap": min(kk, avail_counter)})
 
-    # distribute counter-stereotype quota (largest-remainder)
     quota = round(TOTAL * COUNTER_TARGET)
-    raw   = [s["kk"] * COUNTER_TARGET for s in splits]
-    base  = [min(int(r), splits[i]["cap"]) for i, r in enumerate(raw)]
+    raw = [s["kk"] * COUNTER_TARGET for s in splits]
+    base = [min(int(r), splits[i]["cap"]) for i, r in enumerate(raw)]
     assigned = sum(base)
-    rema  = sorted(range(len(splits)), key=lambda i: raw[i] - int(raw[i]), reverse=True)
+    rema = sorted(range(len(splits)), key=lambda i: raw[i] - int(raw[i]), reverse=True)
     j = 0
     while assigned < quota and j < len(rema) * 4:
         i = rema[j % len(rema)]
         if base[i] < splits[i]["cap"]:
-            base[i] += 1; assigned += 1
+            base[i] += 1
+            assigned += 1
         j += 1
     for i, s in enumerate(splits):
         s["ctgt"] = base[i]
 
-    # select pairs per split (cluster/country balancing carries across splits)
     gid = 0
     used_by_dim = defaultdict(set)
     split_picks = []
     for s in splits:
-        picks = select_pairs([dict(p) for p in s["pool"]], s["kk"],
-                             cluster_load, country_load, s["ctgt"], used_by_dim[s["dim"]])
+        picks = select_pairs([dict(p) for p in s["pool"]], s["kk"], cluster_load, country_load, s["ctgt"], used_by_dim[s["dim"]])
         gid += 1
         split_picks.append((s, gid, picks))
 
-    # assign balanced (pole, role) combos PER DIMENSION -> no pole->answer leak
     by_dim = OrderedDict()
     for idx, (s, g, picks) in enumerate(split_picks):
         by_dim.setdefault(s["dim"], []).append(idx)
     for dim, idxs in by_dim.items():
-        n_dim  = sum(len(split_picks[i][2]) for i in idxs)
+        n_dim = sum(len(split_picks[i][2]) for i in idxs)
         combos = balanced_combos(n_dim)
         random.shuffle(combos)
         ci = 0
         for i in idxs:
             s, g, picks = split_picks[i]
             for p in picks:
-                pole, a_is_low = combos[ci]; ci += 1
-                items.append(build_item(s["dim"], s["tpl"], p, pole, a_is_low,
-                                        f"B1-{len(items) + 1:03d}", f"G{g:02d}"))
+                pole, a_is_low = combos[ci]
+                ci += 1
+                items.append(build_item(s["dim"], s["tpl"], p, pole, a_is_low, f"B1-{len(items) + 1:03d}", f"G{g:02d}"))
     return items
 
-# ── Report ────────────────────────────────────────────────────────────────────
 def report(items, name):
-    n   = len(items)
+    n = len(items)
     ctr = sum(1 for i in items if i["is_counter_stereotype"])
-    gold = defaultdict(int); pole = defaultdict(int); pole_gold = defaultdict(lambda: defaultdict(int))
+    gold = defaultdict(int)
+    pole = defaultdict(int)
+    pole_gold = defaultdict(lambda: defaultdict(int))
     perdim = defaultdict(int)
     for i in items:
         gold[i["gold_answer"]] += 1
         pole[i["pole_asked"]] += 1
         pole_gold[i["pole_asked"]][i["gold_answer"]] += 1
         perdim[i["dimension"]] += 1
-    # leak metric: best guess-by-pole accuracy
     leak = sum(max(pole_gold[p].values()) for p in pole_gold)
     print(f"\n=== {name}: {n} items ===")
     print(f"Counter-stereotype: {ctr}/{n} ({ctr/n:.0%})")
@@ -487,15 +442,17 @@ def report(items, name):
     print(f"guess-by-pole accuracy (leak, ~50% = clean): {leak}/{n} = {leak/n:.0%}")
     print(f"Per dimension: {dict(perdim)}")
 
-# ── Run ───────────────────────────────────────────────────────────────────────
-for variant, ntpl in [("A_1template", 1), ("B_2templates", 2)]:
+if __name__ == "__main__":
+    raw_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "raw"))
+    os.makedirs(raw_dir, exist_ok=True)
+
     random.seed(42)
-    items = generate(ntpl)
-    report(items, variant)
-    
-    path = f"V2_B1_factual_{variant}.jsonl" 
-    
+    items = generate(1)
+    report(items, "V2_B1_factual_A_1template")
+
+    path = os.path.join(raw_dir, "b1_dataset.jsonl")
     with open(path, "w", encoding="utf-8") as f:
         for it in items:
             f.write(json.dumps(it, ensure_ascii=False) + "\n")
-    print("written:", path)
+            
+    print("Successfully written dataset to:", path)

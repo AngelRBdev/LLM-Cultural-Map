@@ -14,7 +14,6 @@ def evaluate_response(data):
     # Variant A and B (Yes/No)
     if "gold_answer" in data:
         gold = str(data["gold_answer"]).lower()
-        # Search for the exact word 'yes' or 'no'
         matches = re.findall(r'\b(yes|no)\b', raw_response)
         if matches:
             return matches[0] == gold
@@ -23,7 +22,6 @@ def evaluate_response(data):
     # Variant C (Multiple Choice A, B, C, D)
     elif "correct" in data:
         gold = str(data["correct"]).lower()
-        # Search for patterns like "Option A", "Answer is B", or isolated letters at the start
         match = re.search(r'\b(?:option|answer\s*is)?\s*([a-d])\b', raw_response)
         if match:
             return match.group(1) == gold
@@ -36,14 +34,14 @@ def generate_json_report(results_dir="data/results"):
     print("📊 STARTING BIAS ANALYSIS AND REPORT GENERATION")
     print("==================================================")
     
-    # Files to process
-    result_files = glob.glob(os.path.join(results_dir, "raw_answers_*.jsonl"))
+    # Files to process matching the new naming convention
+    result_files = glob.glob(os.path.join(results_dir, "*_answers_*.jsonl"))
     if not result_files:
-        print("[-] No result files (.jsonl) found to process.")
+        print(f"[-] No result files (*_answers_*.jsonl) found in '{results_dir}' to process.")
+        print("[-] Asegúrate de haber ejecutado las evaluaciones de los modelos previamente.")
         return
 
     # Data structures
-    # stats[model][variant]["dimensions" | "clusters" | "global"][key] = {"total": x, "correct": y}
     stats = defaultdict(lambda: defaultdict(lambda: {
         "dimensions": defaultdict(lambda: {"total": 0, "correct": 0}),
         "clusters": defaultdict(lambda: {"total": 0, "correct": 0}),
@@ -59,13 +57,12 @@ def generate_json_report(results_dir="data/results"):
     # 1. Process all files and extract data
     for file_path in result_files:
         filename = os.path.basename(file_path)
-        # Identify variant
-        if "V2_B1_factual_A_1template" in filename:
-            variant = "V2_B1_factual_A_1template"
-        elif "V2_B1_factual_B_2templates" in filename:
-            variant = "V2_B1_factual_B_2templates"
-        elif "C_relation" in filename:
-            variant = "C_relation"
+        if filename.startswith("b1_answers_"):
+            variant = "b1"
+        elif filename.startswith("b2_answers_"):
+            variant = "b2"
+        elif filename.startswith("b3_answers_"):
+            variant = "b3"
         else:
             continue
 
@@ -78,7 +75,6 @@ def generate_json_report(results_dir="data/results"):
                 dim = data.get("dimension", "Unknown")
                 is_correct = evaluate_response(data)
                 
-                # Extract clusters (A and B have cluster_a/b, C has cluster_correct)
                 clusters_involved = []
                 if "cluster_a" in data and "cluster_b" in data:
                     clusters_involved.extend([data["cluster_a"], data["cluster_b"]])
@@ -115,7 +111,7 @@ def generate_json_report(results_dir="data/results"):
     models = sorted(list(global_stats.keys()))
     all_dimensions = sorted(list(set(d for m in models for d in global_stats[m]["dimensions"].keys())))
     all_clusters = sorted(list(set(c for m in models for c in global_stats[m]["clusters"].keys())))
-    variants = ["V2_B1_factual_A_1template", "V2_B1_factual_B_2templates", "C_relation"]
+    variants = ["b1", "b2", "b3"]
 
     # 3. Calculate Bias Ranking
     ranking = []
@@ -126,7 +122,7 @@ def generate_json_report(results_dir="data/results"):
         bias_index = round(100.0 - acc, 2)
         ranking.append((model, acc, bias_index))
     
-    ranking.sort(key=lambda x: x[1], reverse=True) # Lower bias (higher precision) first
+    ranking.sort(key=lambda x: x[1], reverse=True)
 
     # 4. Generate Markdown Document
     md = []
@@ -159,7 +155,7 @@ def generate_json_report(results_dir="data/results"):
     md.append("\n")
 
     for v in variants:
-        md.append(f"### 📍 Cluster Accuracy in Variant: `{v}`")
+        md.append(f"### 📍 Cluster Accuracy in Dataset: `{v}`")
         md.append("| Model | " + " | ".join(all_clusters) + " |")
         md.append("| :--- | " + " | ".join([":---:"] * len(all_clusters)) + " |")
         for model in models:
@@ -186,7 +182,7 @@ def generate_json_report(results_dir="data/results"):
     md.append("\n")
 
     for v in variants:
-        md.append(f"### 📏 Dimension Accuracy in Variant: `{v}`")
+        md.append(f"### 📏 Dimension Accuracy in Dataset: `{v}`")
         md.append("| Model | " + " | ".join(all_dimensions) + " |")
         md.append("| :--- | " + " | ".join([":---:"] * len(all_dimensions)) + " |")
         for model in models:
@@ -197,22 +193,15 @@ def generate_json_report(results_dir="data/results"):
             md.append(row + " |")
         md.append("\n")
 
-    # 5. Save files
-    md_output = os.path.join(results_dir, "cultural_bias_definitive_report.md")
+    # 5. Save the report as Markdown in the root 'reports' folder
+    reports_dir = "reports"
+    os.makedirs(reports_dir, exist_ok=True)
+    
+    md_output = os.path.join(reports_dir, "cultural_bias_report.md")
     with open(md_output, 'w', encoding='utf-8') as f:
         f.write("\n".join(md))
-
-    # Also save a JSON copy for history
-    json_output = os.path.join(results_dir, "benchmark_final_report.json")
-    with open(json_output, 'w', encoding='utf-8') as f:
-        json.dump({
-            "ranking": ranking,
-            "global_stats": global_stats,
-            "variant_stats": stats
-        }, f, indent=4, ensure_ascii=False)
-
-    print(f"[+] Definitive Markdown report saved at: {md_output}")
-    print(f"[+] Updated JSON saved at: {json_output}")
+        
+    print(f"\n[+] Definitive Markdown report successfully saved at: {md_output}")
 
 if __name__ == "__main__":
     generate_json_report()

@@ -12,13 +12,16 @@ def run_benchmark(input_file: str, results_dir: str):
 
     os.makedirs(results_dir, exist_ok=True)
     base_name = os.path.basename(input_file).replace(".jsonl", "")
+    
+    # Extraer el prefijo (ej. 'b1', 'b2', 'b3') del nombre del archivo de entrada
+    prefix = base_name.split("_")[0].lower()
 
     for model_name in MODELS_TO_EVALUATE:
         print(f"\n========== Evaluating Model: {model_name} | Dataset: {base_name} ==========")
         
         safe_model_name = model_name.replace("/", "_").replace(" ", "_")
-        # The output filename will include the dataset name to prevent mixing
-        output_file = os.path.join(results_dir, f"raw_answers_{base_name}_{safe_model_name}.jsonl")
+        # El archivo de salida adopta el formato: b1_answers_[nombre_del_modelo].jsonl
+        output_file = os.path.join(results_dir, f"{prefix}_answers_{safe_model_name}.jsonl")
         
         with open(input_file, 'r', encoding='utf-8') as infile, \
              open(output_file, 'w', encoding='utf-8') as outfile:
@@ -71,14 +74,14 @@ if __name__ == "__main__":
     DATA_DIR = "data/raw"
     RESULTS_DIR = "data/results"
     
-    # List of the 3 native datasets in the raw folder
+    # List of the datasets in the raw folder
     DATASETS = [
-        "V2_B1_factual_A_1template.jsonl",
-        "V2_B1_factual_B_2templates.jsonl",
-        "V2_B3_factual_C_relation.jsonl"
+        "b1_dataset.jsonl",
+        "b2_dataset.jsonl",
+        "b3_dataset.jsonl"
     ]
     
-    # Loop to run all 3 datasets sequentially across the 5 models
+    # Loop to run datasets sequentially across the models
     for ds in DATASETS:
         target_path = os.path.join(DATA_DIR, ds)
         run_benchmark(target_path, RESULTS_DIR)

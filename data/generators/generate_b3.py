@@ -23,7 +23,7 @@ Weight: 2 (same as B2, behaviour identification is applied reasoning).
 ~10-11 items per dimension = 80-88 total.
 """
 
-import json, random, itertools
+import json, random, itertools, os
 from collections import defaultdict
 
 random.seed(42)
@@ -90,8 +90,9 @@ SCALES = {
    "France":78,"Italy":80,"Russia":85,
    "Brazil":60,"Argentina":58,"Mexico":62,
    "India":72,"Poland":55,"Israel":30,"Finland":38,
-   "Turkey":68,"Kenya":65,"Nigeria":62,
-   "South Korea":80,"China":78,"Colombia":62,
+   "Turkey":68,"Hungary":60,"Kenya":65,"Nigeria":62,
+   "Egypt":70,"South Korea":80,"China":78,
+   "Venezuela":60,"South Africa":45,"Colombia":62,
  },
  "Leading": {
    "Denmark":5,"Sweden":8,"Norway":10,"Finland":11,
@@ -157,13 +158,6 @@ SCALES = {
 }
 
 # ── B3 scenario templates (2 per dimension, each with LOW and HIGH pole) ──────
-# Rules followed:
-#   - 2-4 sentences, present tense, one central unnamed person
-#   - EXACTLY ONE pole of ONE dimension instantiated
-#   - Zero cultural markers
-#   - Behaviour is specific and observable, not a personality description
-#   - Neutral register (not framed as good or bad)
-
 SCENARIOS = {
  "Communicating": [
   {
@@ -388,8 +382,6 @@ def build_b3_items():
     items = []
     item_num = 0
 
-    # Pick correct countries: most extreme on each pole per dimension
-    # Use a balanced set: aim for different GLOBE clusters across dimensions
     POLE_EXTREMES = {
         "Communicating": [
             ("the United States", "low"), ("Japan", "high"),
@@ -450,9 +442,7 @@ def build_b3_items():
     }
 
     for dim, extremes in POLE_EXTREMES.items():
-        # 2 scenarios per dim (we have 4 scenarios, use them round-robin)
-        scenarios = SCENARIOS[dim]  # 4 scenarios: low, high, low, high
-        used_clusters = set()
+        scenarios = SCENARIOS[dim]
 
         for i, (correct_country, pole) in enumerate(extremes):
             if correct_country not in SCALES[dim]:
@@ -460,13 +450,10 @@ def build_b3_items():
             if correct_country not in CLUSTER:
                 continue
 
-            # Pick scenario: match pole
             pole_scenarios = [s for s in scenarios if s["pole"] == pole]
             scen = pole_scenarios[i % len(pole_scenarios)]
 
             options_list = pick_options(dim, correct_country, pole)
-            # Randomise position
-            correct_idx = 0
             opts_shuffled = options_list[:]
             random.shuffle(opts_shuffled)
             correct_key = ["A","B","C","D"][opts_shuffled.index(correct_country)]
@@ -507,15 +494,16 @@ def report(items):
 
 
 if __name__ == "__main__":
-    import os
     random.seed(42)
     items = build_b3_items()
     report(items)
 
-    # CORRECCIÓN DE RUTA Y NOMBRE PARA TU REPOSITORIO
-    out = "V2_B3_factual_MCQ.jsonl" 
+    raw_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "raw"))
+    os.makedirs(raw_dir, exist_ok=True)
     
-    with open(out, "w", encoding="utf-8") as f: # Forzamos utf-8 por seguridad en Windows
+    path = os.path.join(raw_dir, "b3_dataset.jsonl")
+    
+    with open(path, "w", encoding="utf-8") as f:
         for it in items:
             f.write(json.dumps(it, ensure_ascii=False) + "\n")
-    print(f"Written: {out}")
+    print(f"Successfully written dataset to: {path}")
