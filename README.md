@@ -13,13 +13,13 @@ The system’s core architecture is deeply grounded in two foundational framewor
 To rigorously test model performance across various cognitive and behavioral levels, the system implements an escalating three-phase evaluation pipeline:
 
 * **Phase B1 (Factual Knowledge):** Utilizes binary (`Yes/No`) comparative queries to test a model's foundational comprehension of cultural behavioral polarities and patterns between specific country pairs.
-* **Phase B2 (Applied / Relational Reasoning):** Employs multiple-choice workplace scenario items depicting cross-cultural miscommunications or friction, challenging the model to correctly identify root cultural causes versus non-cultural administrative, technical, or interpersonal distractors[cite: 13].
-* **Phase B3 (Behavioral Identification):** Presents granular workplace behavioral scenarios where models must deduce the most likely country of origin using multi-choice regional and cultural distractors distributed across varying degrees of pole separation[cite: 13].
+* **Phase B2 (Applied / Relational Reasoning):** Employs multiple-choice workplace scenario items depicting cross-cultural miscommunications or friction, challenging the model to correctly identify root cultural causes versus non-cultural administrative, technical, or interpersonal distractors.
+* **Phase B3 (Behavioral Identification):** Presents granular workplace behavioral scenarios where models must deduce the most likely country of origin using multi-choice regional and cultural distractors distributed across varying degrees of pole separation.
 
 ---
 
 ## 3. System Directory Structure & Components
-The repository is structured into distinct, modular functional directories[cite: 13]:
+The repository is structured into distinct, modular functional directories:
 
 ```text
 cultural_bias_benchmark/
@@ -41,7 +41,7 @@ cultural_bias_benchmark/
 ├── .env                     # Environment variables (Private API Keys)
 ├── requirements.txt         # Python project dependencies
 └── README.md                # System documentation
-```[cite: 13]
+```
 
 ---
 
@@ -49,46 +49,46 @@ cultural_bias_benchmark/
 The benchmark system operates through two primary entry points that separate model inference from analytical reporting:
 
 1. **Inference Execution (`src/main_run_benchmark.py`):**
-   * Iterates through the models defined in `src/config.py`[cite: 13].
-   * Automatically detects question formats (binary vs. multi-option dictionaries)[cite: 13].
-   * Interacts with language models via LiteLLM, writing raw logs sequentially into `data/results/` using a standardized naming convention (`b1_answers_[model].jsonl`, `b2_answers_[model].jsonl`, `b3_answers_[model].jsonl`)[cite: 13].
+   * Iterates through the models defined in `src/config.py`.
+   * Automatically detects question formats (binary vs. multi-option dictionaries).
+   * Interacts with language models via LiteLLM, writing raw logs sequentially into `data/results/` using a standardized naming convention (`b1_answers_[model].jsonl`, `b2_answers_[model].jsonl`, `b3_answers_[model].jsonl`).
 
 2. **Evaluation & Reporting Engine (`src/main_evaluate_report.py`):**
-   * Parses raw response files from `data/results/` without requiring live model API calls[cite: 13].
-   * Applies regular expression matching to extract correct answers, calculating granular accuracies per cultural cluster and Meyer dimension[cite: 13].
-   * Generates a comprehensive summary document and saves it directly to **`reports/cultural_bias_report.md`**[cite: 13].
+   * Parses raw response files from `data/results/` without requiring live model API calls.
+   * Applies regular expression matching to extract correct answers, calculating granular accuracies per cultural cluster and Meyer dimension.
+   * Generates a comprehensive summary document and saves it directly to **`reports/cultural_bias_report.md`**.
 
 ---
 
 ## 5. Configuration & Supported Models
-Model behaviors, evaluation thresholds, and cultural cluster definitions are centrally managed in `src/config.py`[cite: 13]. By default, the system evaluates models via LiteLLM[cite: 13], supporting providers such as:
-* `groq/llama-3.1-8b-instant`[cite: 13]
-* `groq/llama-3.3-70b-versatile`[cite: 13]
-* `cohere/command-r-08-2024`[cite: 13]
-* `groq/openai/gpt-oss-20b`[cite: 13]
+Model behaviors, evaluation thresholds, and cultural cluster definitions are centrally managed in `src/config.py`. By default, the system evaluates models via LiteLLM, supporting providers such as:
+* `groq/llama-3.1-8b-instant`
+* `groq/llama-3.3-70b-versatile`
+* `cohere/command-r-08-2024`
+* `groq/openai/gpt-oss-20b`
 
 ---
 
 ## 6. Quick Start & Setup Guide
 
 ### Step 1: Installation
-Clone the repository and install the required Python dependencies listed in `requirements.txt`[cite: 13]:
+Clone the repository and install the required Python dependencies listed in `requirements.txt`:
 ```bash
 pip install -r requirements.txt
-```[cite: 13]
+```
 
 ### Step 2: Environment Configuration
-Create a `.env` file in the root directory to store your private API keys required by LiteLLM[cite: 13]:
+Create a `.env` file in the root directory to store your private API keys required by LiteLLM:
 ```text
 OPENAI_API_KEY="your_key_here"
 GEMINI_API_KEY="your_key_here"
 GROQ_API_KEY="your_key_here"
 COHERE_API_KEY="your_key_here"
-```[cite: 13]
+```
 
-> *Security Note: Ensure your `.env` file is included inside your `.gitignore` file to prevent accidental credential leakage[cite: 13].*
+> *Security Note: Ensure your `.env` file is included inside your `.gitignore` file to prevent accidental credential leakage.*
 
 ### Step 3: Running the Benchmark System
-To execute model evaluations across all datasets and automatically trigger the report generation module, run[cite: 13]:
+To execute model evaluations across all datasets and automatically trigger the report generation module, run:
 ```bash
 python src/main_run_benchmark.py
