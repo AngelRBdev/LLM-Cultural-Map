@@ -1,27 +1,22 @@
 # 🌍 Cultural Bias Benchmark System for LLMs
 
 ## 1. System Overview & Theoretical Foundation
-The **Cultural Bias Benchmark System** is an automated, enterprise-grade evaluation framework engineered to measure, analyze, and quantify how different Large Language Models (LLMs) handle cross-cultural business communication, organizational behavior, and systemic cultural biases. 
+The **Cultural Bias Benchmark System** is an automated, enterprise-grade evaluation framework engineered to measure, analyze, and quantify how different Large Language Models (LLMs) handle cross-cultural business communication, organizational behavior, and systemic cultural biases[cite: 3]. 
 
-The system’s core architecture is deeply grounded in two foundational frameworks of intercultural management:
-* **Erin Meyer’s 8 Cultural Dimensions:** Evaluates communication styles and workplace dynamics across *Communicating, Evaluating, Persuading, Leading, Deciding, Trusting, Disagreeing, and Scheduling*.
-* **GLOBE Study Cultural Clusters:** Groups and maps behavioral responses across **10 Global Cultural Clusters** (*Anglo, Germanic Europe, Nordic Europe, Latin Europe, Eastern Europe, Latin America, Middle East, Southern Asia, Sub-Saharan Africa, and Confucian Asia*).
+The system’s core architecture is deeply grounded in two foundational frameworks of intercultural management[cite: 3]:
+* **Erin Meyer’s 8 Cultural Dimensions:** Evaluates communication styles and workplace dynamics across *Communicating, Evaluating, Persuading, Leading, Deciding, Trusting, Disagreeing, and Scheduling*[cite: 3].
+* **GLOBE Study Cultural Clusters:** Groups and maps behavioral responses across **10 Global Cultural Clusters** (such as *Anglo, Germanic Europe, Nordic Europe, Latin Europe, Eastern Europe, Latin America, Middle East, Southern Asia, Sub-Saharan Africa, and Confucian Asia*)[cite: 3].
 
 ---
 
-## 2. GLOBE Cultural Clusters & Country Mapping
-To maintain transparency and rigor in regional benchmarking, the framework maps specific country profiles to their corresponding **GLOBE Cultural Clusters**:
+# 🌍 Cultural Bias Benchmark System for LLMs
 
-* **Anglo:** Australia, Canada (English-speaking), United Kingdom/England, Ireland, New Zealand, South Africa (white sample), United States.
-* **Latin Europe:** France, Israel, Italy, Portugal, Spain, Switzerland (French-speaking).
-* **Nordic Europe:** Denmark, Finland, Sweden.
-* **Germanic Europe:** Austria, Germany, Netherlands, Switzerland (German-speaking).
-* **Eastern Europe:** Albania, Georgia, Greece, Hungary, Kazakhstan, Poland, Russia, Slovenia.
-* **Latin America:** Argentina, Bolivia, Brazil, Colombia, Costa Rica, Ecuador, El Salvador, Guatemala, Mexico, Venezuela.
-* **Sub-Saharan Africa:** Namibia, Nigeria, South Africa (black sample), Zambia, Zimbabwe.
-* **Middle East:** Egypt, Kuwait, Morocco, Qatar, Turkey.
-* **Southern Asia:** India, Indonesia, Iran, Malaysia, Philippines, Thailand.
-* **Confucian Asia:** China, Hong Kong, Japan, Singapore, South Korea, Taiwan.
+## 1. System Overview & Theoretical Foundation
+The **Cultural Bias Benchmark System** is an automated, enterprise-grade evaluation framework engineered to measure, analyze, and quantify how different Large Language Models (LLMs) handle cross-cultural business communication, organizational behavior, and systemic cultural biases[cite: 3]. 
+
+The system’s core architecture is deeply grounded in two foundational frameworks of intercultural management[cite: 3]:
+* **Erin Meyer’s 8 Cultural Dimensions:** Evaluates communication styles and workplace dynamics across *Communicating, Evaluating, Persuading, Leading, Deciding, Trusting, Disagreeing, and Scheduling*[cite: 3].
+* **GLOBE Study Cultural Clusters:** Groups and maps behavioral responses across **10 Global Cultural Clusters** (such as *Anglo, Germanic Europe, Nordic Europe, Latin Europe, Eastern Europe, Latin America, Middle East, Southern Asia, Sub-Saharan Africa, and Confucian Asia*)[cite: 3].
 
 ---
 
@@ -46,7 +41,10 @@ To rigorously test model performance across various cognitive and behavioral lev
 * **Phase B2 (Applied / Relational Reasoning):** Employs multiple-choice workplace scenario items depicting cross-cultural miscommunications or friction, challenging the model to correctly identify root cultural causes versus non-cultural administrative, technical, or interpersonal distractors.
 * **Phase B3 (Behavioral Identification):** Presents granular workplace behavioral scenarios where models must deduce the most likely country of origin using multi-choice regional and cultural distractors distributed across varying degrees of pole separation.
 
----
+--- 
+
+## 5. System Directory Structure & Components
+The repository is structured into distinct, modular functional directories:
 
 ## 5. System Directory Structure & Components
 The repository is structured into distinct, modular functional directories:
@@ -71,10 +69,35 @@ cultural_bias_benchmark/
 ├── .env                     # Environment variables (Private API Keys)
 ├── requirements.txt         # Python project dependencies
 └── README.md                # System documentation
+```
 
 ---
 
-## 6. Quick Start & Setup Guide
+## 6. Execution Pipeline & Workflow
+The benchmark system operates through two primary entry points that separate model inference from analytical reporting:
+
+1. **Inference Execution (`src/main_run_benchmark.py`):**
+   * Iterates through the models defined in `src/config.py`.
+   * Automatically detects question formats (binary vs. multi-option dictionaries).
+   * Interacts with language models via LiteLLM, writing raw logs sequentially into `data/results/` using a standardized naming convention (`b1_answers_[model].jsonl`, `b2_answers_[model].jsonl`, `b3_answers_[model].jsonl`).
+
+2. **Evaluation & Reporting Engine (`src/main_evaluate_report.py`):**
+   * Parses raw response files from `data/results/` without requiring live model API calls.
+   * Applies regular expression matching to extract correct answers, calculating granular accuracies per cultural cluster and Meyer dimension.
+   * Generates a comprehensive summary document and saves it directly to **`reports/cultural_bias_report.md`**.
+
+---
+
+## 7. Configuration & Supported Models
+Model behaviors, evaluation thresholds, and cultural cluster definitions are centrally managed in `src/config.py`. By default, the system evaluates models via LiteLLM, supporting providers such as:
+* `groq/llama-3.1-8b-instant`
+* `groq/llama-3.3-70b-versatile`
+* `cohere/command-r-08-2024`
+* `groq/openai/gpt-oss-20b`
+
+---
+
+## 8. Quick Start & Setup Guide
 
 ### Step 1: Installation
 Clone the repository and install the required Python dependencies listed in `requirements.txt`:
@@ -97,3 +120,4 @@ COHERE_API_KEY="your_key_here"
 To execute model evaluations across all datasets and automatically trigger the report generation module, run:
 ```bash
 python src/main_run_benchmark.py
+```
